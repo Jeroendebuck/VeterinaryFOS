@@ -1,0 +1,175 @@
+- id: VET:INFECTIOUS
+  label: Infectious Diseases
+  level: 1
+  parents: []
+  synonyms: ["Infection Biology", "Pathogens"]
+  include_keywords: ["infection","pathogen","bacteria","virus","parasite","fungi","AMR"]
+  exclude_keywords: []
+- id: VET:IMMUNO
+  label: Immunology & Vaccinology
+  level: 1
+  parents: []
+  synonyms: ["Host Immunity","Vaccine Science"]
+  include_keywords: ["immun*","vaccine","adjuvant","immune response"]
+  exclude_keywords: []
+- id: VET:GENOMICS
+  label: Genomics & Bioinformatics
+  level: 1
+  parents: []
+  synonyms: ["Omics","Metagenomics","Transcriptomics"]
+  include_keywords: ["genom*","metagenom*","transcriptom*","proteom*","bioinform*"]
+  exclude_keywords: []
+- id: VET:EPID
+  label: Epidemiology & One Health
+  level: 1
+  parents: []
+  synonyms: ["Population Health","Surveillance"]
+  include_keywords: ["epidemiol*","surveillance","One Health","risk factor"]
+  exclude_keywords: []
+- id: VET:DIAG
+  label: Diagnostics & Devices
+  level: 1
+  parents: []
+  synonyms: ["Point-of-Care","Biosensors","Assays"]
+  include_keywords: ["diagnos*","assay","biosensor","PCR","LAMP","ELISA","device"]
+  exclude_keywords: []
+- id: VET:CLINSCI
+  label: Clinical Sciences
+  level: 1
+  parents: []
+  synonyms: ["Internal Medicine","Surgery","Anesthesia","Theriogenology"]
+  include_keywords: ["clinical","surgery","anesth*","analges*","repro*","theriogen*"]
+  exclude_keywords: []
+- id: VET:PATH
+  label: Pathology
+  level: 1
+  parents: []
+  synonyms: ["Anatomic Pathology","Clinical Pathology"]
+  include_keywords: ["patholog*","histopath*","cytopath*"]
+  exclude_keywords: []
+- id: VET:NUTRITION
+  label: Nutrition & Metabolism
+  level: 1
+  parents: []
+  synonyms: ["Dietetics"]
+  include_keywords: ["nutrition","metabol*","diet","feed*","energetics"]
+  exclude_keywords: []
+- id: VET:ANIMALWELF
+  label: Animal Welfare & Behavior
+  level: 1
+  parents: []
+  synonyms: ["Ethology"]
+  include_keywords: ["welfare","behavior","etholog*"]
+  exclude_keywords: []
+- id: VET:PLF
+  label: Precision Livestock & Digital Health
+  level: 1
+  parents: []
+  synonyms: ["Sensors","Wearables","AI in Livestock"]
+  include_keywords: ["precision","sensor","wearable","digital","computer vision","ML","AI"]
+  exclude_keywords: []
+- id: VET:PHARMTOX
+  label: Pharmacology & Toxicology
+  level: 1
+  parents: []
+  synonyms: ["Therapeutics"]
+  include_keywords: ["pharm*","dose","PK","PD","toxic*"]
+  exclude_keywords: []
+- id: VET:ENVZOO
+  label: Wildlife, Zoo & Aquatic Health
+  level: 1
+  parents: []
+  synonyms: ["Conservation Medicine","Aquaculture"]
+  include_keywords: ["wildlife","zoo","aquatic","conservation"]
+  exclude_keywords: []
+- id: VET:FOODSAFETY
+  label: Food Safety & Public Health
+  level: 1
+  parents: []
+  synonyms: ["Food Microbiology"]
+  include_keywords: ["food safety","public health","zoonosis","outbreak"]
+  exclude_keywords: []
+- id: VET:INFECTIOUS:BACT
+  label: Bacteriology
+  level: 2
+  parents: ["VET:INFECTIOUS"]
+  synonyms: ["Bacterial Infections"]
+  include_keywords: ["bacter*","staph*","strep*","mycobact*","treponema","salmonella","E. coli","campylobacter"]
+  exclude_keywords: []
+- id: VET:INFECTIOUS:VIRO
+  label: Virology
+  level: 2
+  parents: ["VET:INFECTIOUS"]
+  synonyms: []
+  include_keywords: ["virus","viral","coronavirus","influenza","parvovirus"]
+  exclude_keywords: []
+- id: VET:INFECTIOUS:PARA
+  label: Parasitology
+  level: 2
+  parents: ["VET:INFECTIOUS"]
+  synonyms: []
+  include_keywords: ["parasite","protozoa","helminth","coccidia","giardia","ticks","mites"]
+  exclude_keywords: []
+- id: VET:INFECTIOUS:MYCO
+  label: Mycology
+  level: 2
+  parents: ["VET:INFECTIOUS"]
+  synonyms: []
+  include_keywords: ["fung*","mycos*","candida","aspergillus"]
+  exclude_keywords: []
+- id: VET:INFECTIOUS:AMR
+  label: Antimicrobial Resistance
+  level: 2
+  parents: ["VET:INFECTIOUS"]
+  synonyms: ["AMR"]
+  include_keywords: ["antimicrobial resistance","AMR","antibiotic resistance","MDR","ESBL"]
+  exclude_keywords: []
+- id: VET:DIAG:MOLEC
+  label: Molecular Diagnostics
+  level: 2
+  parents: ["VET:DIAG"]
+  synonyms: []
+  include_keywords: ["PCR","qPCR","LAMP","isothermal","sequencing","nanopore","illumina"]
+  exclude_keywords: []
+- id: VET:DIAG:DEV
+  label: Devices & Biosensors
+  level: 2
+  parents: ["VET:DIAG"]
+  synonyms: ["Point-of-care devices"]
+  include_keywords: ["biosensor","microfluid*","lab-on-chip","electrochem*","diagnostic device"]
+  exclude_keywords: []
+- id: VET:PLF:DATA
+  label: Data Science & Analytics
+  level: 2
+  parents: ["VET:PLF"]
+  synonyms: ["AI/ML for Animal Health"]
+  include_keywords: ["machine learning","deep learning","computer vision","time series"]
+  exclude_keywords: []
+- id: VET:INFECTIOUS:BACT:MASTITIS
+  label: Bovine Mastitis
+  level: 3
+  parents: ["VET:INFECTIOUS:BACT"]
+  synonyms: []
+  include_keywords: ["mastitis","udder","intramammary","milk","dairy cow"]
+  exclude_keywords: []
+- id: VET:INFECTIOUS:BACT:MAP
+  label: Paratuberculosis (MAP)
+  level: 3
+  parents: ["VET:INFECTIOUS:BACT"]
+  synonyms: ["Johne's disease"]
+  include_keywords: ["paratuberculosis","Johne","MAP","Mycobacterium avium subspecies paratuberculosis"]
+  exclude_keywords: []
+- id: VET:INFECTIOUS:BACT:DD
+  label: Digital Dermatitis
+  level: 3
+  parents: ["VET:INFECTIOUS:BACT"]
+  synonyms: ["Treponeme-associated hoof disease"]
+  include_keywords: ["digital dermatitis","treponema","hoof","lesion"]
+  exclude_keywords: []
+- id: VET:DIAG:MOLEC:LAMP
+  label: Isothermal (LAMP) Diagnostics
+  level: 3
+  parents: ["VET:DIAG:MOLEC"]
+  synonyms: []
+  include_keywords: ["LAMP","isothermal amplification"]
+  exclude_keywords: []

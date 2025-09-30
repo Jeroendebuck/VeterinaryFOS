@@ -1,0 +1,11 @@
+id,label,level,parents,synonyms,include_keywords,exclude_keywords
+VET:INFECTIOUS,Infectious Diseases,1,,"Infection Biology|Pathogens","infection|pathogen|bacteria|virus|parasite|fungi|AMR",
+VET:DIAG,Diagnostics & Devices,1,,"Point-of-Care|Biosensors|Assays","diagnos|assay|biosensor|PCR|LAMP|ELISA|device",
+VET:PLF,Precision Livestock & Digital Health,1,,"Sensors|Wearables|AI in Livestock","precision|sensor|wearable|digital|computer vision|machine learning|AI",
+VET:INFECTIOUS:BACT,Bacteriology,2,VET:INFECTIOUS,"Bacterial Infections","bacter|staph|strep|mycobact|treponema|salmonella|E. coli|campylobacter",
+VET:INFECTIOUS:BACT:MASTITIS,Bovine Mastitis,3,VET:INFECTIOUS:BACT,,"mastitis|udder|intramammary|milk|dairy cow",
+VET:INFECTIOUS:BACT:MAP,Paratuberculosis (MAP),3,VET:INFECTIOUS:BACT,"Johne's disease","paratuberculosis|Johne|MAP|Mycobacterium avium subspecies paratuberculosis",
+VET:INFECTIOUS:BACT:DD,Digital Dermatitis,3,VET:INFECTIOUS:BACT,"Treponeme-associated hoof disease","digital dermatitis|treponema|hoof|lesion",
+VET:DIAG:MOLEC,Molecular Diagnostics,2,VET:DIAG,,"PCR|qPCR|LAMP|isothermal|sequencing|nanopore|illumina",
+VET:DIAG:DEV,Devices & Biosensors,2,VET:DIAG,"Point-of-care devices","biosensor|microfluid|lab-on-chip|electrochem|diagnostic device",
+VET:PLF:DATA,Data Science & Analytics,2,VET:PLF,"AI/ML for Animal Health","machine learning|deep learning|computer vision|time series",
