@@ -176,6 +176,7 @@ def harvest_for_author(author_id: str) -> Iterable[dict]:
                 "institution_ror": inst_ror,
                 "concept_id": cid,
                 "concept_level": clevel,
+                "concept_label_openalex": cname,  
             }
 
 
