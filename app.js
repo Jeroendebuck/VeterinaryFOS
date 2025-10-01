@@ -28,15 +28,18 @@ const state = {
   treemap: []
 };
 
+// dashboard/app.js (but you said these files are at repo root now)
 async function loadAll(){
+  const base = './exports/';   // ← was '../exports/'
   const [m, l, g, t] = await Promise.all([
-    loadCSV('../exports/critical_mass_matrix.csv'),
-    loadCSV('../exports/unit_concept_latest.csv'),
-    loadCSV('../exports/gaps_opportunities.csv'),
-    loadCSV('../exports/portfolio_treemap.csv'),
+    loadCSV(base + 'critical_mass_matrix.csv'),
+    loadCSV(base + 'unit_concept_latest.csv'),
+    loadCSV(base + 'gaps_opportunities.csv'),
+    loadCSV(base + 'portfolio_treemap.csv'),
   ]);
-  state.matrix = m; state.latest = l; state.gaps = g; state.treemap = t;
+  // ...
 }
+
 
 function toNum(x){ const v = Number(x); return isNaN(v) ? null : v; }
 
