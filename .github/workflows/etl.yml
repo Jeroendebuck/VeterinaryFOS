@@ -73,19 +73,26 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p site site/exports
+      
           # 1) copy static files from repo root
           cp -v index.html styles.css app.js site/
-          # (optional) copy any images if you add them later
-          shopt -s nullglob || true
+      
+          # (optional) copy any images if present (safe when none exist)
+          shopt -s nullglob
           for f in *.png *.jpg *.jpeg *.svg *.ico; do cp -v "$f" site/ || true; done
+          shopt -u nullglob
+      
           # 2) export CSVs directly into site/exports (preferred)
           DASHBOARD_OUT_DIR=site/exports python etl/export_for_dashboard.py || true
-          # 3) fallback: if script wrote to ./exports, copy them in
-          if ls exports/*.csv >/dev/null 2>&1; then
+      
+          # 3) fallback: only copy if at least one file matches
+          if compgen -G "exports/*.csv" > /dev/null; then
             cp -v exports/*.csv site/exports/
           fi
+      
           echo "Bundle contents:"
           find site -maxdepth 2 -type f -print
+
 
       - name: Upload site as Pages artifact
         uses: actions/upload-pages-artifact@v3
