@@ -12,6 +12,7 @@ on:
       - 'models/**'
       - 'seeds/**'
       - 'profiles.yml'
+      - 'dbt_project.yml'
       - 'requirements.txt'
       - '.github/workflows/etl.yml'
 
@@ -40,32 +41,64 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Locate dbt project directory
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Try common locations; otherwise search up to depth 4.
+          if [ -f "dbt_project.yml" ]; then
+            DBT_DIR="."
+          elif [ -f "research_landscape_starter/dbt_project.yml" ]; then
+            DBT_DIR="research_landscape_starter"
+          else
+            FOUND=$(find . -maxdepth 4 -type f -name dbt_project.yml | head -n1 || true)
+            if [ -n "${FOUND}" ]; then
+              DBT_DIR=$(dirname "${FOUND}")
+            else
+              echo "dbt_project.yml not found in repository root or subfolders." >&2
+              echo "Tree preview:" >&2
+              find . -maxdepth 3 -type f -name 'dbt_project.yml' -o -name 'profiles.yml' -o -name 'requirements.txt' || true
+              exit 1
+            fi
+          fi
+          echo "PROJECT_DIR=${DBT_DIR}" >> "$GITHUB_ENV"
+          echo "Using PROJECT_DIR=${DBT_DIR}"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Fetch OpenAlex for roster
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
           python etl/fetch_openalex.py
 
       - name: (Optional) Convert vet taxonomy YAML → CSV seed
-        if: ${{ hashFiles('data/vet_taxonomy.yaml') != '' }}
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          python etl/taxonomy_yaml_to_csv.py
+          if [ -f "data/vet_taxonomy.yaml" ]; then
+            python etl/taxonomy_yaml_to_csv.py
+          else
+            echo "No data/vet_taxonomy.yaml present; skipping"
+          fi
 
       - name: dbt seed + run
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
           dbt deps || true
           dbt seed --profiles-dir . --project-dir . --full-refresh
           dbt run  --profiles-dir . --project-dir .
 
       - name: Export CSVs for dashboard
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
           python etl/export_for_dashboard.py
 
@@ -73,4 +106,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: exports
-          path: exports/*.csv
+          path: ${{ env.PROJECT_DIR }}/exports/*.csv
