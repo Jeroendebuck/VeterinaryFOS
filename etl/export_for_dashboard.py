@@ -3,22 +3,20 @@ import os
 import duckdb
 import pandas as pd
 
+OUT_DIR = os.environ.get('DASHBOARD_OUT_DIR', 'site/exports')  # default for Pages deployment
+os.makedirs(OUT_DIR, exist_ok=True)
 
-OUT_DIR = 'dashboard/exports'
-os.makedirs('exports', exist_ok=True)
 con = duckdb.connect('data/warehouse.duckdb')
 
-def export(view_name: str, out_path: str) -> None:
+def export(view_name: str, filename: str) -> None:
     df = con.execute(f"select * from {view_name}").fetch_df()
-    df.to_csv(out_path, index=False)
-    print(f"Exported {out_path} ({len(df)} rows)")
+    df.to_csv(os.path.join(OUT_DIR, filename), index=False)
+    print(f"Exported {filename} ({len(df)} rows)")
 
-# Export dbt views
-export('dashboard_unit_concept_latest',   'exports/unit_concept_latest.csv')
-export('dashboard_gaps_portfolio',        'exports/gaps_opportunities.csv')
-export('dashboard_critical_mass_matrix',  'exports/critical_mass_matrix.csv')
+export('dashboard_unit_concept_latest',   'unit_concept_latest.csv')
+export('dashboard_gaps_portfolio',        'gaps_opportunities.csv')
+export('dashboard_critical_mass_matrix',  'critical_mass_matrix.csv')
 
-# Build a treemap-friendly table on the fly
 con.execute("""
 create or replace view tmp_portfolio as
 select
@@ -32,4 +30,4 @@ join stg_concept_taxonomy c
 group by 1,2,3
 """)
 
-export('tmp_portfolio', 'exports/portfolio_treemap.csv')
+export('tmp_portfolio', 'portfolio_treemap.csv')
