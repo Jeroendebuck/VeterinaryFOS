@@ -83,7 +83,8 @@ def normalize_year(pub_date: Optional[str], fallback_year: Optional[int]) -> Opt
 def _session() -> requests.Session:
     if not MAILTO:
         sys.stderr.write(
-            "[warn] OPENALEX_MAILTO not set. Add your institutional email to avoid 403s.\n"
+            "[warn] OPENALEX_MAILTO not set. Add your institutional email to avoid 403s.
+"
         )
     s = requests.Session()
     ua_email = f"(mailto:{MAILTO})" if MAILTO else "(mailto:someone@example.com)"
@@ -113,7 +114,8 @@ def _get(path: str, params: Dict, max_retries: int = 6) -> requests.Response:
             backoff = min(backoff * 2, 30)
             continue
         if r.status_code == 403:
-            msg = r.text[:500].replace("\n", " ")
+            msg = r.text[:500].replace("
+", " ")
             raise requests.HTTPError(
                 "403 from OpenAlex. Ensure a mailto is provided (header + query) and filter syntax is valid. "
                 f"Response: {msg}",
@@ -184,4 +186,154 @@ def load_author_overrides(path: str) -> Dict[str, Dict[str, str]]:
         if not aid:
             continue
         out[aid] = {
-            "unit_id": str(row[cols.get("unit_id", "unit_id")]).s
+            "unit_id": str(row[cols.get("unit_id", "unit_id")]).strip(),
+            "unit_name": str(row[cols.get("unit_name", "unit_name")]).strip(),
+        }
+    return out
+
+# Load optional seeds once
+ALIAS_RULES = load_alias_rules(ALIASES_CSV)
+AUTHOR_OVERRIDES = load_author_overrides(OVERRIDES_CSV)
+
+
+def choose_unit_for_authorship(aid: str, authorship: dict) -> Tuple[str, str, Optional[str], Optional[str]]:
+    """Return (unit_id_auto, unit_name_auto, raw_affiliation, institution_ror_candidate)."""
+    raw_aff = authorship.get("raw_affiliation_string") if authorship else None
+
+    # 0) hard override by author id
+    if aid in AUTHOR_OVERRIDES:
+        o = AUTHOR_OVERRIDES[aid]
+        return o.get("unit_id") or f"author:{aid}", o.get("unit_name") or f"Author {aid}", raw_aff, None
+
+    # 1) try the deepest institution on this authorship
+    insts = (authorship or {}).get("institutions") or []
+    best = None  # (score, inst)
+    for inst in insts:
+        disp = inst.get("display_name") or ""
+        score = len(disp)
+        if best is None or score > best[0]:
+            best = (score, inst)
+    cand_ror: Optional[str] = None
+    cand_name: Optional[str] = None
+    if best is not None:
+        inst = best[1]
+        cand_ror = inst.get("ror") or inst.get("id")
+        cand_name = inst.get("display_name") or cand_ror
+
+    # 2) regex aliases on raw affiliation + institution name
+    hay = " ".join([raw_aff or "", cand_name or ""]).strip()
+    if hay:
+        for rule in ALIAS_RULES:
+            rx = rule.get("_re")
+            if rx and rx.search(hay):
+                return (
+                    rule.get("unit_id") or (cand_ror or f"author:{aid}"),
+                    rule.get("unit_name") or (cand_name or f"Author {aid}"),
+                    raw_aff,
+                    cand_ror,
+                )
+
+    # 3) fallback to candidate institution (likely the university ROR)
+    if cand_ror:
+        return cand_ror, (cand_name or cand_ror), raw_aff, cand_ror
+
+    # 4) last resort: author bucket
+    return f"author:{aid}", f"Author {aid}", raw_aff, None
+
+# ---------------------------------------------------------------------
+# ETL core
+# ---------------------------------------------------------------------
+
+def read_roster_ids(path: str) -> List[str]:
+    df = pd.read_csv(path)
+    if "OpenAlexID" not in df.columns:
+        raise SystemExit(f"Missing 'OpenAlexID' column in {path}")
+    ids = [str(x).strip() for x in df["OpenAlexID"].dropna().tolist()]
+    ids = [i for i in ids if i and i != "nan"]
+    if not ids:
+        raise SystemExit("No OpenAlex IDs found in roster.")
+    return ids
+
+
+def harvest_for_author(aid: str) -> Iterable[dict]:
+    """Yield work×concept rows for one author since START_DATE, with unit mapping."""
+    filter_str = f"authorships.author.id:{aid},from_publication_date:{START_DATE}"
+    works = fetch_all("works", filter_str)
+
+    for w in works:
+        wid = w.get("id")
+        pub_date = (
+            w.get("publication_date")
+            or w.get("from_publication_date")
+            or (w.get("host_venue") or {}).get("published_date")
+        )
+        year = normalize_year(pub_date, w.get("publication_year"))
+
+        # Find this author's authorship block
+        au_self = None
+        for au in (w.get("authorships") or []):
+            if (au.get("author") or {}).get("id") == aid:
+                au_self = au
+                break
+
+        unit_id, unit_name, raw_aff, inst_ror = choose_unit_for_authorship(aid, au_self or {})
+
+        concepts = w.get("concepts") or []
+        for c in concepts:
+            cid = c.get("id")
+            clevel = c.get("level")
+            cname = c.get("display_name") or humanize_concept_id(cid)
+            if cid and clevel is not None:
+                yield {
+                    "work_id": wid,
+                    "published_date": pub_date,
+                    "year": year,
+                    "author_openalex_id": aid,
+                    "raw_affiliation": raw_aff,
+                    "unit_id_auto": unit_id,
+                    "unit_name_auto": unit_name,
+                    "institution_ror": inst_ror,
+                    "concept_id": cid,
+                    "concept_level": clevel,
+                    "concept_label_openalex": cname,
+                }
+
+
+def main() -> None:
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    author_ids = read_roster_ids(ROSTER_CSV)
+
+    rows: List[dict] = []
+    for idx, aid in enumerate(author_ids, 1):
+        print(f"[{idx}/{len(author_ids)}] Fetching works for {aid} since {START_DATE}…", flush=True)
+        try:
+            rows.extend(list(harvest_for_author(aid)))
+        except requests.HTTPError as e:
+            sys.stderr.write(f"ERROR for {aid}: {e}
+")
+            time.sleep(1.5)
+            continue
+
+    # Write works.csv
+    df = pd.DataFrame(rows)
+    df.to_csv(WORKS_OUT, index=False)
+    print(f"Wrote {WORKS_OUT} ({len(df)} rows)")
+
+    # Write globals_concepts.csv (global denominators by concept×year)
+    if not df.empty:
+        g = (
+            df.groupby(["concept_id", "year"], dropna=False)
+              .agg(global_works=("work_id", "nunique"))
+              .reset_index()
+              .rename(columns={"year": "period"})
+        )
+    else:
+        g = pd.DataFrame(columns=["concept_id", "period", "global_works"])
+
+    g.to_csv(GLOBALS_OUT, index=False)
+    print(f"Wrote {GLOBALS_OUT} ({len(g)} rows)")
+
+
+if __name__ == "__main__":
+    main()
