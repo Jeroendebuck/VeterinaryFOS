@@ -3,6 +3,8 @@ import os
 import duckdb
 import pandas as pd
 
+
+OUT_DIR = 'dashboard/exports'
 os.makedirs('exports', exist_ok=True)
 con = duckdb.connect('data/warehouse.duckdb')
 
