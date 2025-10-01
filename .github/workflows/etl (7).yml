@@ -1,0 +1,51 @@
+name: Nightly ETL + dbt + Export
+on:
+  schedule:
+    - cron: '17 4 * * *'   # 04:17 UTC daily (runs from default branch)
+  workflow_dispatch: {}
+
+env:
+  OPENALEX_MAILTO: ${{ vars.OPENALEX_MAILTO }}
+  OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
+  OPENALEX_RATE_SECONDS: "0.25"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fetch OpenAlex for roster
+        run: |
+          python etl/fetch_openalex.py
+
+      - name: (Optional) Convert vet taxonomy YAML → CSV seed
+        if: ${{ hashFiles('data/vet_taxonomy.yaml') != '' }}
+        run: |
+          python etl/taxonomy_yaml_to_csv.py
+
+      - name: dbt seed + run
+        run: |
+          dbt deps || true
+          dbt seed --profiles-dir . --project-dir . --full-refresh
+          dbt run  --profiles-dir . --project-dir .
+
+      - name: Export CSVs for dashboard
+        run: |
+          python etl/export_for_dashboard.py
+
+      - name: Upload exports as artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: exports
+          path: exports/*.csv
