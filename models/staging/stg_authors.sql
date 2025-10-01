@@ -1,7 +1,9 @@
 {{ config(materialized='view') }}
--- Expecting data/roster_with_metrics.csv: columns Name, OpenAlexID, Affiliation
+with src as (
+  select * from read_csv_auto('data/roster_with_metrics.csv', header=true, all_varchar=true)
+)
 select
-  cast(r."Name" as varchar)       as name,
-  cast(r."OpenAlexID" as varchar) as openalex_id,
-  cast(coalesce(r."Affiliation", '') as varchar) as affiliation
-from read_csv_auto('data/roster_with_metrics.csv') as r
+  cast(src."Name" as varchar)       as name,
+  cast(src."OpenAlexID" as varchar) as openalex_id,
+  cast('' as varchar)               as affiliation
+from src
