@@ -49,6 +49,11 @@ ROSTER_CSV = os.path.join(DATA_DIR, "roster_with_metrics.csv")
 WORKS_OUT = os.path.join(DATA_DIR, "works.csv")
 GLOBALS_OUT = os.path.join(DATA_DIR, "globals_concepts.csv")
 
+def humanize_concept_id(cid: str | None) -> str | None:
+    if not cid:
+        return None
+    tail = cid.split("/")[-1]
+    return tail.replace("_", " ").title()
 
 def _session() -> requests.Session:
     if not MAILTO:
