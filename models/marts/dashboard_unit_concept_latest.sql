@@ -11,7 +11,7 @@ select
 from {{ ref('metrics_lq_growth') }} m
 left join {{ ref('stg_concept_taxonomy') }} c
   on c.id = m.concept_id
-left join {{ ref('stg_concepts_dim') }} d      -- <-- NEW
+left join {{ ref('stg_concepts_dim') }} d
   on d.concept_id = m.concept_id
 left join {{ ref('metrics_critical_mass') }} cm
   using (unit_id, concept_id)
