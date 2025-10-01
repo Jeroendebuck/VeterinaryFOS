@@ -171,6 +171,7 @@ def harvest_for_author(author_id: str) -> Iterable[dict]:
         for c in (w.get("concepts") or []):
             cid = c.get("id")
             clevel = c.get("level")
+            cname = c.get("display_name") or humanize_concept_id(cid) 
             if cid is None or clevel is None:
                 continue
             yield {
