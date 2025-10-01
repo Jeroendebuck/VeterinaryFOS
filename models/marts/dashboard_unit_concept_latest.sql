@@ -1,4 +1,5 @@
 {{ config(materialized='view') }}
+
 select
   m.unit_id,
   c.id as concept_id,
@@ -8,5 +9,7 @@ select
   m.works_latest,
   cm.has_critical_mass
 from {{ ref('metrics_lq_growth') }} m
-join {{ ref('stg_concept_taxonomy') }} c on c.id = m.concept_id
-left join {{ ref('metrics_critical_mass') }} cm using (unit_id, concept_id);
+join {{ ref('stg_concept_taxonomy') }} c
+  on c.id = m.concept_id
+left join {{ ref('metrics_critical_mass') }} cm
+  using (unit_id, concept_id)
