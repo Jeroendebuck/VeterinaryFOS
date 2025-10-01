@@ -28,7 +28,8 @@ const state = {
   treemap: []
 };
 
-// REPLACE your existing loadAll() with this:
+let labelByConcept = new Map();
+
 async function loadAll() {
   const base = './exports/';
 
