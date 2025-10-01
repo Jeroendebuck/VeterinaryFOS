@@ -8,10 +8,10 @@ Adds richer unit mapping so you can aggregate at the level of:
   3) Regex alias rules on raw affiliation/institution names (via seeds/unit_aliases.csv)
 
 Each (work × concept) row includes:
-  - unit_id_auto      : unified aggregation key (ROR or custom "unit:<slug>")
-  - unit_name_auto    : human label for the unit
-  - raw_affiliation   : the author's raw affiliation string on that work (for QA)
-  - institution_ror   : best-guess institution ROR seen on the authorship (if any)
+  - unit_id_auto           : unified aggregation key (ROR or custom "unit:<slug>")
+  - unit_name_auto         : human label for the unit
+  - raw_affiliation        : the author's raw affiliation string on that work (for QA)
+  - institution_ror        : best-guess institution ROR on the authorship (if any)
   - concept_label_openalex : human label for the concept (OpenAlex display_name)
 
 Environment variables:
@@ -22,8 +22,8 @@ Environment variables:
 
 Inputs:
   data/roster_with_metrics.csv   (must contain column: OpenAlexID)
-  seeds/unit_aliases.csv         (optional; columns: pattern,unit_id,unit_name,priority)
-  seeds/author_overrides.csv     (optional; columns: author_openalex_id,unit_id,unit_name)
+  seeds/unit_aliases.csv         (optional; cols: pattern,unit_id,unit_name,priority)
+  seeds/author_overrides.csv     (optional; cols: author_openalex_id,unit_id,unit_name)
 
 Outputs:
   data/works.csv                 (work×concept; includes unit_id_auto etc.)
@@ -62,7 +62,6 @@ OVERRIDES_CSV = os.path.join("seeds", "author_overrides.csv")
 # ---------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------
-
 def humanize_concept_id(cid: Optional[str]) -> Optional[str]:
     """Fallback label from an OpenAlex concept URL like https://openalex.org/C123..."""
     if not cid:
@@ -83,8 +82,7 @@ def normalize_year(pub_date: Optional[str], fallback_year: Optional[int]) -> Opt
 def _session() -> requests.Session:
     if not MAILTO:
         sys.stderr.write(
-            "[warn] OPENALEX_MAILTO not set. Add your institutional email to avoid 403s.
-"
+            "[warn] OPENALEX_MAILTO not set. Add your institutional email to avoid 403s.\n"
         )
     s = requests.Session()
     ua_email = f"(mailto:{MAILTO})" if MAILTO else "(mailto:someone@example.com)"
@@ -93,6 +91,7 @@ def _session() -> requests.Session:
         "Accept": "application/json",
     })
     return s
+
 
 SESSION = _session()
 
@@ -114,8 +113,7 @@ def _get(path: str, params: Dict, max_retries: int = 6) -> requests.Response:
             backoff = min(backoff * 2, 30)
             continue
         if r.status_code == 403:
-            msg = r.text[:500].replace("
-", " ")
+            msg = r.text[:500].replace("\n", " ")
             raise requests.HTTPError(
                 "403 from OpenAlex. Ensure a mailto is provided (header + query) and filter syntax is valid. "
                 f"Response: {msg}",
@@ -144,7 +142,6 @@ def fetch_all(endpoint: str, filter_str: str) -> List[dict]:
 # ---------------------------------------------------------------------
 # Seeds: aliases & overrides (optional)
 # ---------------------------------------------------------------------
-
 def load_alias_rules(path: str) -> List[dict]:
     if not os.path.exists(path):
         return []
@@ -153,7 +150,7 @@ def load_alias_rules(path: str) -> List[dict]:
     cols = {c.lower(): c for c in df.columns}
     def get(row, key):
         return row[cols[key]] if key in cols else None
-    rules = []
+    rules: List[dict] = []
     for _, row in df.iterrows():
         rules.append({
             "pattern": str(get(row, "pattern") or "").strip(),
@@ -163,7 +160,7 @@ def load_alias_rules(path: str) -> List[dict]:
         })
     rules.sort(key=lambda r: r.get("priority", 0), reverse=True)
     # Pre-compile regex where possible
-    compiled = []
+    compiled: List[dict] = []
     for r in rules:
         pat = r.get("pattern") or ""
         try:
@@ -182,14 +179,18 @@ def load_author_overrides(path: str) -> Dict[str, Dict[str, str]]:
     # Normalize column access
     cols = {c.lower(): c for c in df.columns}
     for _, row in df.iterrows():
-        aid = str(row[cols.get("author_openalex_id", "author_openalex_id")]).strip()
+        key_author = cols.get("author_openalex_id", "author_openalex_id")
+        key_unit = cols.get("unit_id", "unit_id")
+        key_name = cols.get("unit_name", "unit_name")
+        aid = str(row[key_author]).strip()
         if not aid:
             continue
         out[aid] = {
-            "unit_id": str(row[cols.get("unit_id", "unit_id")]).strip(),
-            "unit_name": str(row[cols.get("unit_name", "unit_name")]).strip(),
+            "unit_id": str(row[key_unit]).strip(),
+            "unit_name": str(row[key_name]).strip(),
         }
     return out
+
 
 # Load optional seeds once
 ALIAS_RULES = load_alias_rules(ALIASES_CSV)
@@ -203,7 +204,12 @@ def choose_unit_for_authorship(aid: str, authorship: dict) -> Tuple[str, str, Op
     # 0) hard override by author id
     if aid in AUTHOR_OVERRIDES:
         o = AUTHOR_OVERRIDES[aid]
-        return o.get("unit_id") or f"author:{aid}", o.get("unit_name") or f"Author {aid}", raw_aff, None
+        return (
+            o.get("unit_id") or f"author:{aid}",
+            o.get("unit_name") or f"Author {aid}",
+            raw_aff,
+            None,
+        )
 
     # 1) try the deepest institution on this authorship
     insts = (authorship or {}).get("institutions") or []
@@ -243,7 +249,6 @@ def choose_unit_for_authorship(aid: str, authorship: dict) -> Tuple[str, str, Op
 # ---------------------------------------------------------------------
 # ETL core
 # ---------------------------------------------------------------------
-
 def read_roster_ids(path: str) -> List[str]:
     df = pd.read_csv(path)
     if "OpenAlexID" not in df.columns:
@@ -257,6 +262,7 @@ def read_roster_ids(path: str) -> List[str]:
 
 def harvest_for_author(aid: str) -> Iterable[dict]:
     """Yield work×concept rows for one author since START_DATE, with unit mapping."""
+    # IMPORTANT: from_publication_date must live inside the filter param.
     filter_str = f"authorships.author.id:{aid},from_publication_date:{START_DATE}"
     works = fetch_all("works", filter_str)
 
@@ -310,8 +316,7 @@ def main() -> None:
         try:
             rows.extend(list(harvest_for_author(aid)))
         except requests.HTTPError as e:
-            sys.stderr.write(f"ERROR for {aid}: {e}
-")
+            sys.stderr.write(f"ERROR for {aid}: {e}\n")
             time.sleep(1.5)
             continue
 
