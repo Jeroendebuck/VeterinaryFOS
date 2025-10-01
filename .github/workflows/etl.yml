@@ -5,8 +5,8 @@ on:
   workflow_dispatch: {}
 
 env:
-  OPENALEX_MAILTO: ${{ vars.OPENALEX_MAILTO }}
-  OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
+  OPENALEX_MAILTO: ${{ secrets.OPENALEX_MAILTO }}   # ← use secrets
+  OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }} # (optional; Premium)
   OPENALEX_RATE_SECONDS: "0.25"
 
 jobs:
