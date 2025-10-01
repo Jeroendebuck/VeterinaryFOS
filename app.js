@@ -29,16 +29,32 @@ const state = {
 };
 
 // dashboard/app.js (but you said these files are at repo root now)
-async function loadAll(){
-  const base = './exports/';   // ← was '../exports/'
-  const [m, l, g, t] = await Promise.all([
-    loadCSV(base + 'critical_mass_matrix.csv'),
-    loadCSV(base + 'unit_concept_latest.csv'),
-    loadCSV(base + 'gaps_opportunities.csv'),
-    loadCSV(base + 'portfolio_treemap.csv'),
-  ]);
-  // ...
+async function loadAll() {
+  const base = './exports/';
+
+  try {
+    const [matrix, latest, gaps, treemap] = await Promise.all([
+      loadCSV(base + 'critical_mass_matrix.csv'),
+      loadCSV(base + 'unit_concept_latest.csv'),
+      loadCSV(base + 'gaps_opportunities.csv'),
+      loadCSV(base + 'portfolio_treemap.csv'),
+    ]);
+
+    state.matrix = matrix;
+    state.latest = latest;
+    state.gaps = gaps;
+    state.treemap = treemap;
+  } catch (err) {
+    console.error(err);
+    // Simple inline error UI so it’s obvious what failed in production
+    const msg = document.createElement('div');
+    msg.style.cssText = 'background:#7f1d1d;color:#fecaca;padding:10px;border-radius:8px;margin:10px;';
+    msg.textContent = 'Failed to load one or more CSVs from ./exports/. Check your Pages deploy & workflow.';
+    document.body.prepend(msg);
+    throw err;
+  }
 }
+
 
 
 function toNum(x){ const v = Number(x); return isNaN(v) ? null : v; }
