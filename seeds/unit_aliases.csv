@@ -1,0 +1,5 @@
+pattern,unit_id,unit_name,priority
+(?i)faculty of veterinary medicine|fvm,unit:ucalgary_fvm,Faculty of Veterinary Medicine (UCalgary),90
+(?i)veterinary microbiology,unit:dept_vm,Department of Veterinary Microbiology,80
+(?i)royal veterinary college,https://ror.org/04p2k6p56,Royal Veterinary College (RVC),100
+(?i)roslin institute,https://ror.org/01p3c2b35,The Roslin Institute,100
