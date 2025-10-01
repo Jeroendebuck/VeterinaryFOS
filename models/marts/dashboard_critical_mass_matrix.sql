@@ -1,4 +1,5 @@
 {{ config(materialized='view') }}
+
 with ranked as (
   select *,
          row_number() over (partition by unit_id, concept_id order by period desc) as rn
