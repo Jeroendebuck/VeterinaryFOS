@@ -90,6 +90,13 @@ jobs:
             echo "No data/vet_taxonomy.yaml present; skipping"
           fi
 
+      - name: Sanity check ETL outputs
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          ls -l data || true
+          test -s data/works.csv || (echo "Missing data/works.csv — did fetch_openalex.py run?" && exit 1)
+          test -s data/globals_concepts.csv || (echo "Missing data/globals_concepts.csv" && exit 1)
+
       - name: dbt seed + run
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
