@@ -11,10 +11,11 @@ Each (work × concept) row includes:
   - unit_id_auto      : unified aggregation key (ROR or custom "unit:<slug>")
   - unit_name_auto    : human label for the unit
   - raw_affiliation   : the author's raw affiliation string on that work (for QA)
+  - institution_ror   : best-guess institution ROR seen on the authorship (if any)
   - concept_label_openalex : human label for the concept (OpenAlex display_name)
 
 Environment variables:
-  OPENALEX_MAILTO        (required-ish) your email for OpenAlex "polite pool"
+  OPENALEX_MAILTO        (recommended) your email for OpenAlex "polite pool"
   OPENALEX_API_KEY       (optional) premium key
   OPENALEX_RATE_SECONDS  (optional) delay between page fetches (default 0.25s)
   OPENALEX_START_DATE    (optional) ISO date, default "2015-01-01"
@@ -40,9 +41,9 @@ import pandas as pd
 import requests
 from dateutil.parser import isoparse
 
-# -----------------------------
+# ---------------------------------------------------------------------
 # Config / environment
-# -----------------------------
+# ---------------------------------------------------------------------
 OPENALEX_BASE = "https://api.openalex.org"
 MAILTO = os.environ.get("OPENALEX_MAILTO", "").strip()
 API_KEY = os.environ.get("OPENALEX_API_KEY", "").strip()
@@ -58,9 +59,9 @@ GLOBALS_OUT = os.path.join(DATA_DIR, "globals_concepts.csv")
 ALIASES_CSV = os.path.join("seeds", "unit_aliases.csv")
 OVERRIDES_CSV = os.path.join("seeds", "author_overrides.csv")
 
-# -----------------------------
+# ---------------------------------------------------------------------
 # Helpers
-# -----------------------------
+# ---------------------------------------------------------------------
 
 def humanize_concept_id(cid: Optional[str]) -> Optional[str]:
     """Fallback label from an OpenAlex concept URL like https://openalex.org/C123..."""
@@ -85,7 +86,7 @@ def _session() -> requests.Session:
             "[warn] OPENALEX_MAILTO not set. Add your institutional email to avoid 403s.\n"
         )
     s = requests.Session()
-    ua_email = f"(mailto:{MAILTO})" if MAILTO else "(mailto:[email protected])"
+    ua_email = f"(mailto:{MAILTO})" if MAILTO else "(mailto:someone@example.com)"
     s.headers.update({
         "User-Agent": f"VeterinaryFOS/1.0 {ua_email}",
         "Accept": "application/json",
@@ -138,9 +139,9 @@ def fetch_all(endpoint: str, filter_str: str) -> List[dict]:
         time.sleep(RATE)
     return out
 
-# -----------------------------
+# ---------------------------------------------------------------------
 # Seeds: aliases & overrides (optional)
-# -----------------------------
+# ---------------------------------------------------------------------
 
 def load_alias_rules(path: str) -> List[dict]:
     if not os.path.exists(path):
@@ -183,15 +184,4 @@ def load_author_overrides(path: str) -> Dict[str, Dict[str, str]]:
         if not aid:
             continue
         out[aid] = {
-            "unit_id": str(row[cols.get("unit_id", "unit_id")]).strip(),
-            "unit_name": str(row[cols.get("unit_name", "unit_name")]).strip(),
-        }
-    return out
-
-
-# Load optional seeds once
-ALIAS_RULES = load_alias_rules(ALIASES_CSV)
-AUTHOR_OVERRIDES = load_author_overrides(OVERRIDES_CSV)
-
-
-def choose_unit_for_authorship(aid: str, authorship: d
+            "unit_id": str(row[cols.get("unit_id", "unit_id")]).s
